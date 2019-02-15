@@ -1,0 +1,36 @@
+# MLOps Reference Pipeline
+# Run unit tests, analyze code quality, then update and execute ML training pipeline.
+# More info on Azure DevOps & YAML pipelines here - https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'Ubuntu-16.04'
+
+steps:
+- task: UsePythonVersion@0
+  displayName: 'Use Python 3.6'
+  inputs:
+    versionSpec: 3.6
+    
+- script: |
+   pip install flake8
+   pip install flake8_formatter_junit_xml
+   flake8 --format junit-xml --output-file $(Build.BinariesDirectory)/flake8_report.xml --exit-zero
+  displayName: 'Check code quality'
+  
+- task: PublishTestResults@2
+  displayName: 'Publish Unit Test Results'
+  inputs:
+    testResultsFiles: '$(Build.BinariesDirectory)/*_report.xml'
+    searchFolder: '$(System.DefaultWorkingDirectory)/code/02_modeling'
+    mergeTestResults: true
+
+- task: AzureCLI@1
+  displayName: 'Create/update and submit training pipeline'
+  inputs:
+    azureSubscription: 'Operationalization Subscription (92c76a2f-0e1c-4216-b65e-abf7a3f34c1e)'
+    scriptLocation: inlineScript
+    inlineScript: 'python reference/datatransferpipeline.py'
+  enabled: false

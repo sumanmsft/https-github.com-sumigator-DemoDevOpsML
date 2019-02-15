@@ -1,0 +1,3 @@
+python createcompute.py
+python createdatafactory.py
+python registerdatastore.py
